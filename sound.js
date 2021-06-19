@@ -34,17 +34,15 @@ const audio1 = document.getElementById("audio1")
 const audio2 = document.getElementById("audio2")
 const audio3 = document.getElementById("audio3")
 
-
 const chunks1 = [];
 const chunks2 = [];
 const chunks3 = [];
 
 let makeRecording = false;
 let makeRecording2 = false;
-
 let started = false;
 
-
+// start recording on click event
 document.getElementById("startRecording1").addEventListener("click", () => {
     makeRecording = true;
 })
@@ -61,6 +59,9 @@ function sequencer() {
     Tone.Transport.scheduleRepeat(repeat, "16n")
     Tone.Transport.start();
 
+    // Will be called for each of my 16 checkboxes to check if a sound should be played. 
+    // This function also check if a recording has been requested. 
+    // The recording will start when looptime hits 0 and end when looptime hits 31
     function repeat(time) {
         let step = checkbox % 16;
         let looptime = checkbox % 32;
