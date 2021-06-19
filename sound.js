@@ -1,4 +1,4 @@
-// Create drum-machine input checkboxes
+// function for creating drum-machine input checkboxes
 function createDrumMachine(rowId) {
     for (let i = 0; i <= 16; i++) {
         let input = document.createElement("INPUT");
@@ -9,12 +9,14 @@ function createDrumMachine(rowId) {
     }
 }
 
+// calling function for creating input checkboxes
 createDrumMachine("top")
 createDrumMachine("middle-1")
 createDrumMachine("middle-2")
 createDrumMachine("middle-3")
 createDrumMachine("bottom")
 
+// adding drum sounds - to be used in drum-machine
 let hihat = new Tone.Player("./samples/CYCdh_K1close_ClHat-01.wav").toDestination();
 let snare = new Tone.Player("./samples/CYCdh_K1close_Snr-01.wav").toDestination();
 let rim = new Tone.Player("./samples/CYCdh_K1close_Rim-01.wav").toDestination();
@@ -22,53 +24,34 @@ let sdst = new Tone.Player("./samples/CYCdh_K1close_SdSt-01.wav").toDestination(
 let kick = new Tone.Player("./samples/CYCdh_K1close_Kick-03.wav").toDestination();
 
 
-
+// constants for recording
 const context = Tone.context;
 const dest = context.createMediaStreamDestination();
 const recorder = new MediaRecorder(dest.stream);
+
+// passing recorded audio into these audio tags
 const audio1 = document.getElementById("audio1")
 const audio2 = document.getElementById("audio2")
 const audio3 = document.getElementById("audio3")
+
+
 const chunks1 = [];
 const chunks2 = [];
 const chunks3 = [];
 
 let makeRecording = false;
-let started = false;
-// function recordSound(btnId, audioId, chunksName) {
-//     document.getElementById(btnId).addEventListener("click", () => {
-//         state = true;
-//         if (state) {
-//             if (looptime) {}
-//         }
-//         sampler.connect(dest);
-//         sampler.toMaster();
-//         recorder.start();
-//         console.log("Now recording");
+let makeRecording2 = false;
 
-//         console.log(looptime);
-//         setTimeout(() => {
-//             console.log("No longer recording");
-//             recorder.stop();
-//             recorder.ondataavailable = evt => chunksName.push(evt.data);
-//             recorder.onstop = evt => {
-//                 let blob = new Blob(chunksName, {
-//                     type: 'audio/ogg; codecs=opus'
-//                 });
-//                 audioId.src = URL.createObjectURL(blob);
-//             };
-//         }, 8000)
-//     })
-// }
+let started = false;
+
 
 document.getElementById("startRecording1").addEventListener("click", () => {
     makeRecording = true;
 })
 
-// recordSound("startRecording1", audio1, chunks1);
-// recordSound("startRecording2", audio2, chunks2);
-// recordSound("startRecording2", audio3, chunks3);
-
+document.getElementById("startRecording2").addEventListener("click", () => {
+    makeRecording2 = true;
+})
 
 
 function sequencer() {
@@ -87,8 +70,10 @@ function sequencer() {
         let selectedSound4 = document.querySelector(`.middle-3 input:nth-child(${step + 1})`);
         let selectedSound5 = document.querySelector(`.bottom input:nth-child(${step + 1})`);
 
+        // looptime 
         console.log("looptime: " + looptime);
 
+        // will play a drum sound for each checked box
         if (selectedSound1.checked) {
             hihat.start(time).stop(time + 0.1);
         }
@@ -107,6 +92,7 @@ function sequencer() {
 
         
         // recording and looping piano
+        // first recorder
         if (makeRecording) {
             if (looptime == 0 && !started) {
                 started = true
@@ -126,6 +112,30 @@ function sequencer() {
                         type: 'audio/ogg; codecs=opus'
                     });
                     audio1.src = URL.createObjectURL(blob);  
+                }
+            }
+        }
+
+        // second recorder
+        if (makeRecording2) {
+            if (looptime == 0 && !started) {
+                started = true
+                sampler.connect(dest);
+                sampler.toMaster();
+                recorder.start();
+                console.log("Now recording");
+            }
+            else if (looptime == 31 && started == true) {
+                makeRecording = false;
+                started = false;
+                console.log("No longer recording");
+                recorder.stop();
+                recorder.ondataavailable = evt => chunks2.push(evt.data);
+                recorder.onstop = evt => {
+                    let blob = new Blob(chunks2, {
+                        type: 'audio/ogg; codecs=opus'
+                    });
+                    audio2.src = URL.createObjectURL(blob);  
                 }
             }
         }
