@@ -1,6 +1,6 @@
 // function for creating drum-machine input checkboxes
 function createDrumMachine(rowId) {
-    for (let i = 0; i <= 16; i++) {
+    for (let i = 0; i < 16; i++) {
         let input = document.createElement("INPUT");
         input.setAttribute("type", "checkbox");
         input.setAttribute("style", "margin-right: 14px;");
@@ -9,7 +9,20 @@ function createDrumMachine(rowId) {
     }
 }
 
+// creating the indicator row
+function createIndicatorRow(rowId) {
+    for (let i = 0; i < 16; i++) {
+        let input = document.createElement("INPUT");
+        input.setAttribute("type", "checkbox");
+        input.setAttribute("style", "margin-right: 14px;");
+        input.classList.add("shadow");
+        input.classList.add("indicator");
+        document.getElementById(rowId).appendChild(input)
+    }
+}
+
 // calling function for creating input checkboxes
+createIndicatorRow("indicator")
 createDrumMachine("top")
 createDrumMachine("middle-1")
 createDrumMachine("middle-2")
@@ -29,18 +42,31 @@ const context = Tone.context;
 const dest = context.createMediaStreamDestination();
 const recorder = new MediaRecorder(dest.stream);
 
+//const recorder = new Tone.Recorder();
+
 // passing recorded audio into these audio tags
 const audio1 = document.getElementById("audio1")
 const audio2 = document.getElementById("audio2")
 const audio3 = document.getElementById("audio3")
 
+// standard volume of audio tags too high compared to midi piano
+audio1.volume = 0.2;
+audio2.volume = 0.2;
+audio3.volume = 0.2;
+
+// creating an array to store recorded data
 const chunks1 = [];
 const chunks2 = [];
 const chunks3 = [];
 
+// booleans to keep track of which recording is started
 let makeRecording = false;
 let makeRecording2 = false;
-let started = false;
+let makeRecording3 = false
+let started1 = false;
+let started2 = false;
+let started3 = false;
+
 
 // start recording on click event
 document.getElementById("startRecording1").addEventListener("click", () => {
@@ -51,26 +77,52 @@ document.getElementById("startRecording2").addEventListener("click", () => {
     makeRecording2 = true;
 })
 
+document.getElementById("startRecording3").addEventListener("click", () => {
+    makeRecording3 = true;
+})
+
+
 
 function sequencer() {
     let checkbox = 0;
+
+    // initials beats per minute
     Tone.Transport.bpm.value = 80;
+
+    // lowering all volume to stop crackling
     Tone.Master.volume.value = -10;
+
+    // repeated event every 16th note
     Tone.Transport.scheduleRepeat(repeat, "16n")
+
     Tone.Transport.start();
 
     // Will be called for each of my 16 checkboxes to check if a sound should be played. 
     // This function also check if a recording has been requested. 
     // The recording will start when looptime hits 0 and end when looptime hits 31
     function repeat(time) {
+
+        // step is used to check every input checkbox 
         let step = checkbox % 16;
+
+        // looptime is used for recording sound.
         let looptime = checkbox % 32;
+
         let selectedSound1 = document.querySelector(`.top input:nth-child(${step + 1})`);
         let selectedSound2 = document.querySelector(`.middle-1 input:nth-child(${step + 1})`);
         let selectedSound3 = document.querySelector(`.middle-2 input:nth-child(${step + 1})`);
         let selectedSound4 = document.querySelector(`.middle-3 input:nth-child(${step + 1})`);
         let selectedSound5 = document.querySelector(`.bottom input:nth-child(${step + 1})`);
 
+        let indicatorStep = document.querySelector(`#indicator input:nth-child(${step + 1})`);
+        let indicators = document.getElementsByClassName("indicator");
+        
+        for (let i = 0; i < indicators.length; i++) {
+            indicators[i].checked = false
+        }
+
+        indicatorStep.click();
+        
         // looptime 
         console.log("looptime: " + looptime);
 
@@ -95,40 +147,59 @@ function sequencer() {
         // recording and looping piano
         // first recorder
         if (makeRecording) {
-            if (looptime == 0 && !started) {
-                started = true
+            let recordBtn = document.getElementById("startRecording1");
+            if(!started1){
+                recordBtn.setAttribute("style", "background-color: orange;");
+                recordBtn.innerText = "Waiting for step.."; 
+            }
+            if (looptime == 0 && !started1) {
+                recordBtn.setAttribute("style", "background-color: red;");
+                recordBtn.innerText = "Recording..";
+                started1 = true
+                // connecting sampler to the media stream. Sampler = midi piano
                 sampler.connect(dest);
                 sampler.toMaster();
                 recorder.start();
                 console.log("Now recording");
             }
-            else if (looptime == 31 && started == true) {
+            else if (looptime == 31 && started1) {
+                recordBtn.setAttribute("style", "background-color: green;");
+                recordBtn.innerText = "Playing..";
                 makeRecording = false;
-                started = false;
+                started1 = false;
                 console.log("No longer recording");
                 recorder.stop();
-                recorder.ondataavailable = evt => chunks1.push(evt.data);
+                // ondataavailable returns blobs of multimedia data. the array chunks1 holds all the blobs 
+                recorder.ondataavailable = event => chunks1.push(event.data);
                 recorder.onstop = evt => {
-                    let blob = new Blob(chunks1, {
-                        type: 'audio/ogg; codecs=opus'
-                    });
-                    audio1.src = URL.createObjectURL(blob);  
+                    // creating a new blob using all the small blobs in order to create one long audio src
+                    let blob = new Blob(chunks1);
+                    audio1.src = URL.createObjectURL(blob);
                 }
             }
         }
 
         // second recorder
         if (makeRecording2) {
-            if (looptime == 0 && !started) {
-                started = true
+            let recordBtn = document.getElementById("startRecording2");
+            if(!started2){
+                recordBtn.setAttribute("style", "background-color: orange;");
+                recordBtn.innerText = "Waiting for step.."; 
+            }
+            if (looptime == 0 && !started2) {
+                recordBtn.setAttribute("style", "background-color: red;");
+                recordBtn.innerText = "Recording..";
+                started2 = true
                 sampler.connect(dest);
                 sampler.toMaster();
                 recorder.start();
                 console.log("Now recording");
             }
-            else if (looptime == 31 && started == true) {
-                makeRecording = false;
-                started = false;
+            else if (looptime == 31 && started2) {
+                recordBtn.setAttribute("style", "background-color: green;");
+                recordBtn.innerText = "Playing..";
+                makeRecording2 = false;
+                started2 = false;
                 console.log("No longer recording");
                 recorder.stop();
                 recorder.ondataavailable = evt => chunks2.push(evt.data);
@@ -140,12 +211,44 @@ function sequencer() {
                 }
             }
         }
+
+        // second recorder
+        if (makeRecording3) {            
+            let recordBtn = document.getElementById("startRecording3");
+            if(!started3){
+                recordBtn.setAttribute("style", "background-color: orange;");
+                recordBtn.innerText = "Waiting for step.."; 
+            }
+            if (looptime == 0 && !started3) {
+                recordBtn.setAttribute("style", "background-color: red;");
+                recordBtn.innerText = "Recording..";
+                started3 = true
+                sampler.connect(dest);
+                sampler.toMaster();
+                recorder.start();
+                console.log("Now recording");
+            }
+            else if (looptime == 31 && started3) {
+                recordBtn.setAttribute("style", "background-color: green;");
+                recordBtn.innerText = "Playing..";
+                makeRecording3 = false;
+                started3 = false;
+                console.log("No longer recording");
+                recorder.stop();
+                recorder.ondataavailable = evt => chunks3.push(evt.data);
+                recorder.onstop = evt => {
+                    let blob = new Blob(chunks3, {
+                        type: 'audio/ogg; codecs=opus'
+                    });
+                    audio3.src = URL.createObjectURL(blob);  
+                }
+            }
+        }
         checkbox++
     }
 }
 
 sequencer();
-
 
 
 // -- start/stop drum machine start --
@@ -162,20 +265,17 @@ document.getElementById("play").addEventListener("click", () => {
 })
 // -- start/stop drum machine end --
 
+// Most browsers support web midi access
 if (navigator.requestMIDIAccess) {
     console.log('This browser supports WebMIDI!');
 } else {
     console.log('WebMIDI is not supported in this browser.');
 }
 
+// requesting midi access - calling onMIDISuccess on resolve and onMIDIFailure on reject
 navigator.requestMIDIAccess()
     .then(onMIDISuccess, onMIDIFailure);
 
-function onMIDISuccess(midiAccess) {
-    console.log(midiAccess);
-    let inputs = midiAccess.inputs;
-    let outputs = midiAccess.outputs;
-}
 
 function onMIDIFailure() {
     console.log('Could not access your MIDI devices.');
@@ -189,6 +289,7 @@ function onMIDISuccess(midiAccess) {
 function getMIDIMessage(message) {
     let command = message.data[0];
     let noteNumber = message.data[1];
+    // if else || - if message length > 2, velocity = data[2] else 0
     let velocity = (message.data.length > 2) ? message.data[2] : 0;
     console.log(command, noteNumber, velocity);
     playMidi(noteNumber, command, sampler, sustain);
@@ -205,6 +306,8 @@ let sampler = new Tone.Sampler({
     release: 1,
     baseUrl: "/pianoNotes/",
 }).toDestination();
+
+
 
 // -- Sustain slider start --
 let slider = document.getElementById("sustainpedal");
@@ -500,7 +603,8 @@ document.getElementById("fluteSound").addEventListener("click", () => {
 })
 // -- change sound to flute end --
 
-
+// -- function to change sound  start - -
+// only works for sound which i could find same sample notes
 function changeSound(id, url) {
     document.getElementById(id).addEventListener("click", () => {
         sampler = new Tone.Sampler({
@@ -515,6 +619,7 @@ function changeSound(id, url) {
         }).toDestination();
     })
 }
+// -- function to change sound end --
 
 changeSound("celloSound", "/celloNotes/");
 changeSound("pianoSound", "/pianoNotes/");
@@ -606,18 +711,3 @@ document.getElementById("kickselect").addEventListener("change", () => {
     }
 })
 // -- kick select end --
-
-//const recorder = new Tone.Recorder();
-
-
-
-
-
-// document.getElementById("stopRecording").addEventListener("click", async () => {
-//     recorder.stop();
-//     recorder.ondataavailable = evt => chunks.push(evt.data);
-//     recorder.onstop = evt => {
-//     let blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' });
-//     audio.src = URL.createObjectURL(blob);
-//   };
-// })
